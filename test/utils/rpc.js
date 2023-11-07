@@ -123,19 +123,20 @@ async function getAxonParam(){
 }
 
 async function getTxReceipt(provider, txHash, count) {
-    let response
-    for (let i = 0; i < count; i++) {
-        response = await provider.getTransactionReceipt(txHash);
-        if (response == null) {
-            await sleep(2000)
-            continue;
-        }
-        if (response.confirmations >= 1) {
-            return response
-        }
-        await sleep(2000)
+    const transaction = await provider.getTransaction(txHash);
+    if (transaction === null) {
+        throw new Error(`Transaction with hash ${txHash} not found.`);
     }
-    return response
+
+    let receipt;
+    for (let i = 0; i < count; i++) {
+        receipt = await provider.getTransactionReceipt(txHash);
+        if (receipt !== null && receipt.confirmations >= 1) {
+            return receipt;
+        }
+        await sleep(2000);
+    }
+    return receipt;
 }
 
 
