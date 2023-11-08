@@ -36,6 +36,7 @@ describe("type  max min data test",function (){
             })
             let tx = await contract.typeUint8(255,[255,255,255],[255,255,255]);
             console.log("typeUint8 hash :",tx.hash);
+            await tx.wait();
             let reusltGetUint8 =await contract.getUint8();
             //expected log
             expect(reusltGetUint8.toString()).to.be.equal('255,255,255,255,255,255,255')
@@ -74,8 +75,9 @@ describe("type  max min data test",function (){
         })
 
         it("typeU256 max: ", async () => {
-            await contract.setUint256(65535);
-            let x =await contract.getUint256();
+            let tx = await contract.setUint256(65535);
+            await tx.wait();
+            let x = await contract.getUint256();
             expect(x).to.be.equal(65535)
         })
 
@@ -292,7 +294,8 @@ describe("type  max min data test",function (){
 
         it("typeString:", async () => {
 
-            await contract.changName();
+            let tx = await contract.changName();
+            await tx.wait();
             console.log("The new string  is :", await contract.getName());
             expect(await contract.getName()).to.equal("Zrptotest")
 
