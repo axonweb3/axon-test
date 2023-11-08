@@ -6,55 +6,116 @@ on:
       - master
   pull_request:
 
-
 jobs:
   contract-tests:
     strategy:
-      fail-fast: false
       matrix:
-        net: ['testnet_v1']
-    runs-on: ubuntu-latest
+        os: [ ubuntu-22.04 ]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+
+      - name: Checkout Axon Tests
+        uses: actions/checkout@v4
+        # TODO Fix CI at first, then fix tests later.
         with:
-          node-version: '16'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - name: Node Cache
-        uses: actions/cache@v2
-        id: npm-and-yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+          ref: 0e2e379ac17175c301115127ea679f1d0085ddc3
+
+      - name: Checkout Axon
+        uses: actions/checkout@v4
+        with:
+          repository: axonweb3/axon
+          ref: 2a88c0ce1e61c68cd114ca36ef4f05cb7f6a07e8
+          path: axon
+
+      - name: Cache of Cargo
+        uses: actions/cache@v3
         with:
           path: |
-            ${{ steps.yarn-cache-dir-path.outputs.dir }}
-            ~/.npm
-          key: ${{ runner.os }}-node_modules-${{ hashFiles('/home/runner/work/**/package-lock.json', '/home/runner/work/**/yarn.lock') }}
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            axon/target/
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('axon/**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
+
+      - name: Build Axon
+        working-directory: axon
+        run: cargo build
+
+      - name: Deploy Local Network of Axon
+        working-directory: axon
+        run: |
+          rm -rf ./devtools/chain/data
+          ./target/debug/axon init \
+            --config     devtools/chain/config.toml \
+            --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
+            > axon.log 2>&1
+          ./target/debug/axon run \
+            --config     devtools/chain/config.toml \
+            >> axon.log 2>&1 &
+
+      - name: Check Axon Status Before Test
+        run: |
+          MAX_RETRIES=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            sleep 10
+            response=$(curl -s -w "\n%{http_code}" http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}')
+            http_code=$(echo "$response" | tail -n1)
+            response_body=$(echo "$response" | sed '$d')
+            if [[ "$http_code" -eq 200 ]]; then
+              echo "$response_body"
+              exit 0
+            else
+              echo "Axon status check failed with HTTP status code: $http_code, retrying ($i/$MAX_RETRIES)"
+              if [[ "$i" -eq $MAX_RETRIES ]]; then
+                echo "Axon status check failed after $MAX_RETRIES attempts."
+                exit 1
+              fi
+            fi
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn cache dir)" >> ${GITHUB_OUTPUT}
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+      - name: Node Cache
+        uses: actions/cache@v3
+        id: npm-and-yarn-cache
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir.outputs.dir }}
+            ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-node_modules-
-      - name: Deploy Local Network of Axon
-        run: |
-            git clone https://github.com/axonweb3/axon.git
-            cd axon
-            cargo build
-            rm -rf ./devtools/chain/data
-            ./target/debug/axon run --config devtools/chain/config.toml --chain-spec devtools/chain/specs/single_node/chain-spec.toml > chain.log 2>&1 &      
-      - name: Run tests
-        id: runtest
+
+      - name: Run Axon Tests
         run: |
           npm install
-          npm run test:axon_local
-      - name: check axon status
+          npm run test:test --network=axon_test --grep=""
+
+      - name: Check Axon Status
         if: success() || failure()
         run: |
           curl http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}'
-      - name: cp axon log file
+
+      - name: Copy the Log File into Report Directory
         if: failure()
-        run: | 
-           cp axon/chain.log mochawesome-report
+        run: |
+          cp axon/chain.log mochawesome-report
+
       - name: Publish reports
-        if: always()
-        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
         with:
           name: jfoa-build-reports-${{ runner.os }}
           path: mochawesome-report/
