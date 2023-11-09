@@ -19,6 +19,7 @@ describe("eventTestContract", function () {
         let response = await tx.wait()
         expect(response.logs.length).to.be.equal(10000)
         for (let i = 0; i < response.logs.length; i++) {
+            console.log(`response.logs[${i}] is `, response.logs[i]);
             let data = response.logs[i].data;
             expect(data).to.be.equal('0x0000000000000000000000000000000000000000000000000000000000000000')
         }
