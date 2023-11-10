@@ -17,15 +17,13 @@ jobs:
 
       - name: Checkout Axon Tests
         uses: actions/checkout@v4
-        # TODO Fix CI at first, then fix tests later.
-        with:
-          ref: 0e2e379ac17175c301115127ea679f1d0085ddc3
 
       - name: Checkout Axon
         uses: actions/checkout@v4
         with:
           repository: axonweb3/axon
-          ref: 2a88c0ce1e61c68cd114ca36ef4f05cb7f6a07e8
+          # axonweb3/axon#1526
+          ref: bc7336aad8d23a1d2b6ff4399d01848ba828e758
           path: axon
 
       - name: Cache of Cargo
