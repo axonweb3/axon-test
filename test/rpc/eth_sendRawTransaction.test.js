@@ -295,11 +295,12 @@ describe("eth_sendRawTransaction ", function () {
                 let currentAddress = await ethers.provider.getSigner().getAddress();
                 let sendBeforeNonces = await getTxCount(currentAddress);
                 let penddingNonce = await ethers.provider.getTransactionCount(ethers.provider.getSigner().getAddress(), "pending")
-                await ethers.provider.getSigner().sendTransaction({
+                let tx = await ethers.provider.getSigner().sendTransaction({
                     "to": null,
                     "nonce": penddingNonce,
                     "data": logContract.bytecode,
                 })
+                await tx.wait();
                 let sendReturnHashNonces = await getTxCount(currentAddress);
                 expect(sendBeforeNonces[0]).to.be.equal(sendBeforeNonces[1])
                 expect(sendReturnHashNonces[0]).to.be.equal(sendReturnHashNonces[1])

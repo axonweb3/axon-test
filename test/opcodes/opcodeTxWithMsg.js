@@ -14,9 +14,9 @@ describe("opcodeTxWithMsg.js opcode -tx msg ", function () {
     before(async function () {
         const blockInfoContract = await ethers.getContractFactory("opcodeTxWithMsg");
         contractWithValue = await blockInfoContract.deploy({value: 10n, gasPrice: 91111n});
+        await contractWithValue.deployed();
         const blockInfoContract2 = await ethers.getContractFactory("opcodeTxWithMsg");
         contract2NoValue = await blockInfoContract2.deploy({gasPrice: 91112n});
-        await contractWithValue.deployed();
         await contract2NoValue.deployed();
     });
 
@@ -86,12 +86,11 @@ describe("opcodeTxWithMsg.js opcode -tx msg ", function () {
         before(async function () {
             //todo check  no  mod gasLimit will pass
             txWithValue = await contractWithValue.updateMsgAndTxData({gasPrice: 91234, gasLimit: 6000000});
-            txWithNoValue = await contract2NoValue.updateMsgAndTxData({gasPrice: 90000, gasLimit: 6000000});
-
             receiptWithValue = await txWithValue.wait();
             msgDatWithValue = await contractWithValue.msgData();
             txDataWithValue = await contractWithValue.txData();
 
+            txWithNoValue = await contract2NoValue.updateMsgAndTxData({gasPrice: 90000, gasLimit: 6000000});
             receiptNoValue = await txWithNoValue.wait();
             msgDatNoValue = await contract2NoValue.msgData();
             txDataNoValue = await contract2NoValue.txData();

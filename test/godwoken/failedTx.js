@@ -1,13 +1,12 @@
 const {expect} = require("chai");
 const {ethers, waffle} = require("hardhat");
+const {getTxReceipt} = require("../utils/rpc");
 
 let contract;
 
 describe('Revertable transaction', function () {
     this.timeout(600000)
 
-
-    let provider = waffle.provider;
 
     beforeEach(async function () {
         const factory = await ethers.getContractFactory("RevertHandling");
@@ -44,10 +43,11 @@ describe('Revertable transaction', function () {
         it('revert transferred value', async () => {
             // set transaction params
             const value = 10;
+            const msg = 'Hello';
 
             // set message
-            const tx = await contract.setMsg(0, 'Hello', {value: value, gasLimit: 30000});
-            const receipt = await provider.getTransactionReceipt(tx.hash);
+            const tx = await contract.setMsg(0, msg, {value: value, gasLimit: 30000});
+            const receipt = await getTxReceipt(ethers.provider, tx.hash, 100)
 
             // check receipt
             expect(receipt.status).to.be.equal(0, 'transaction should be failed');
@@ -59,7 +59,7 @@ describe('Revertable transaction', function () {
 
             // check nonce
             const accounts = await ethers.getSigners();
-            const nonce = await provider.getTransactionCount(accounts[0].address);
+            const nonce = await ethers.provider.getTransactionCount(accounts[0].address);
             expect(nonce).to.be.greaterThan(tx.nonce, 'current nonce should be greater than last time');
         });
     });

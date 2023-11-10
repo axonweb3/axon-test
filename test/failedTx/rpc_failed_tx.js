@@ -33,9 +33,9 @@ describe("Failed commit tx", function () {
     let failedContract080;
 
     before(async function () {
-        console.log('070')
+        console.log('prepare 1st failed tx')
         failedContract070 = await prepareFailedTxContract("contracts/failedTx/failedTxContract0.7.0.sol:FailedTxContract")
-        console.log('080')
+        console.log('prepare 2nd failed tx')
         failedContract080 = await prepareFailedTxContract("contracts/failedTx/failedTxContract.0.8.4.sol:FailedTxContract")
 
     });
@@ -207,18 +207,21 @@ async function checkResponseOfFailedTx(txHash, isLow080Panic) {
 
 async function prepareFailedTxContract(solFailedTxContractPath) {
     let contractInfo = await ethers.getContractFactory(solFailedTxContractPath);
-    let contractInfo1 = await ethers.getContractFactory(solFailedTxContractPath);
-    let contractInfo2 = await ethers.getContractFactory(solFailedTxContractPath);
-
-    let contract1 = await contractInfo1.deploy()
-    let contract = await contractInfo.deploy()
-    let contract2 = await contractInfo2.deploy()
-    await contract2.deployed();
+    let contract = await contractInfo.deploy();
     await contract.deployed();
+
+    let contractInfo1 = await ethers.getContractFactory(solFailedTxContractPath);
+    let contract1 = await contractInfo1.deploy();
     await contract1.deployed();
+
+    let contractInfo2 = await ethers.getContractFactory(solFailedTxContractPath);
+    let contract2 = await contractInfo2.deploy();
+    await contract2.deployed();
+
     //deploy ckb proxy address
     //invoke prepare method
-    await contract.prepare(contract1.address, contract2.address, {"value": "0x123450"})
+    let tx = await contract.prepare(contract1.address, contract2.address, {"value": "0x123450"});
+    await tx.wait();
     return contract;
 }
 

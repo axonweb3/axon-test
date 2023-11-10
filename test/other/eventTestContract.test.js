@@ -14,7 +14,7 @@ describe("eventTestContract", function () {
         console.log("contractAddress:", contract.address);
     });
 
-    it("emit 10000 log ,should return 100000 log msg ", async () => {
+    it("emit 10000 log ,should return 10000 log msg ", async () => {
         let tx = await contract.testLog(10000, {gasLimit: 25000000});
         let response = await tx.wait()
         expect(response.logs.length).to.be.equal(10000)
