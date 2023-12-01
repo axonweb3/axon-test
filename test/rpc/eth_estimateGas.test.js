@@ -495,12 +495,13 @@ describe("eth_estimateGas", function () {
             // todo check
             // axon succ
             // hardhat failed
+            // 0xba43b7400 = 50 Gwei
             let estimateGas = await ethers.provider.send('eth_estimateGas',
                 [{
                     from: haveCkbAddress,
                     to: normalEoaAddress,
                     data: '0x',
-                    gasPrice: '0xffffffffff'
+                    gasPrice: '0xba43b7400'
                 }])
             expect(estimateGas).to.be.include('0x')
         })
