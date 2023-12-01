@@ -503,13 +503,13 @@ describe("eth_call", function () {
             // todo check
             // axon succ
             // hardhat failed
-            // 0xba43b7400 = 50 Gwei
+            // 0x746a528800 = 500 Gwei
             let ret = await ethers.provider.send('eth_call',
                 [{
                     from: haveCkbAddress,
                     to: normalEoaAddress,
                     data: '0x',
-                    gasPrice: '0xba43b7400'
+                    gasPrice: '0x746a528800'
                 }, 'latest'])
             expect(ret).to.be.include('0x')
         })
